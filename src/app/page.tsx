@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useDashboard } from "@/context/store-context";
+import { useUserSettings } from "@/context/settings-context";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -83,43 +84,38 @@ function safeDateFormat(dateStr: string, fmt: string): string {
 function DashboardSkeleton() {
   return (
     <div className="animate-pulse space-y-8 p-8">
-      {/* Header skeleton */}
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-slate-200" />
+        <div className="h-10 w-10 rounded-lg bg-slate-200 dark:bg-slate-700" />
         <div className="space-y-2">
-          <div className="h-5 w-32 rounded bg-slate-200" />
-          <div className="h-3 w-56 rounded bg-slate-200" />
+          <div className="h-5 w-32 rounded bg-slate-200 dark:bg-slate-700" />
+          <div className="h-3 w-56 rounded bg-slate-200 dark:bg-slate-700" />
         </div>
       </div>
-
-      {/* Stat cards skeleton */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div key={i} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
-                <div className="h-3 w-20 rounded bg-slate-200" />
-                <div className="h-7 w-10 rounded bg-slate-200" />
-                <div className="h-2.5 w-28 rounded bg-slate-200" />
+                <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="h-7 w-10 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="h-2.5 w-28 rounded bg-slate-200 dark:bg-slate-700" />
               </div>
-              <div className="h-12 w-12 rounded-lg bg-slate-200" />
+              <div className="h-12 w-12 rounded-lg bg-slate-200 dark:bg-slate-700" />
             </div>
           </div>
         ))}
       </div>
-
-      {/* Content cards skeleton */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-6 py-4">
-              <div className="h-5 w-40 rounded bg-slate-200" />
+          <div key={i} className="rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div className="border-b border-slate-100 px-6 py-4 dark:border-slate-700">
+              <div className="h-5 w-40 rounded bg-slate-200 dark:bg-slate-700" />
             </div>
             <div className="space-y-4 px-6 py-4">
               {Array.from({ length: 4 }).map((_, j) => (
                 <div key={j} className="flex items-center gap-3">
-                  <div className="h-4 w-16 rounded-full bg-slate-200" />
-                  <div className="h-4 flex-1 rounded bg-slate-200" />
+                  <div className="h-4 w-16 rounded-full bg-slate-200 dark:bg-slate-700" />
+                  <div className="h-4 flex-1 rounded bg-slate-200 dark:bg-slate-700" />
                 </div>
               ))}
             </div>
@@ -144,6 +140,8 @@ export default function DashboardPage() {
     students,
     conferences,
   } = useDashboard();
+
+  const { isPaneVisible } = useUserSettings();
 
   // --- Derived data ---
 
@@ -224,7 +222,6 @@ export default function DashboardPage() {
   const upcomingDeadlines = useMemo<DeadlineItem[]>(() => {
     const items: DeadlineItem[] = [];
 
-    // Peer review due dates (accepted or in-progress)
     for (const review of pendingReviews) {
       if (review.dueDate) {
         const d = parseISO(review.dueDate);
@@ -243,7 +240,6 @@ export default function DashboardPage() {
       }
     }
 
-    // Conference deadlines (submission and registration for non-attended)
     for (const conf of upcomingConferences) {
       if (conf.submissionDeadline) {
         const d = parseISO(conf.submissionDeadline);
@@ -277,7 +273,6 @@ export default function DashboardPage() {
       }
     }
 
-    // Grant submission deadlines (planning, drafting, submitted, under-review)
     const activeGrantStatuses = new Set(["planning", "drafting", "submitted", "under-review"]);
     for (const grant of grants.list) {
       if (activeGrantStatuses.has(grant.status) && grant.submissionDeadline) {
@@ -297,13 +292,10 @@ export default function DashboardPage() {
       }
     }
 
-    // Sort by date ascending
     items.sort((a, b) => a.date.getTime() - b.date.getTime());
-
     return items;
   }, [pendingReviews, upcomingConferences, grants.list]);
 
-  // --- Module badge variant mapping ---
   const moduleBadgeVariant: Record<string, "default" | "success" | "warning" | "danger" | "info" | "outline"> = {
     review: "danger",
     conference: "info",
@@ -326,181 +318,327 @@ export default function DashboardPage() {
 
       <div className="space-y-8 p-8">
         {/* Stat Cards Row */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <StatCard
-            label="Papers in Pipeline"
-            value={pipelinePapers.length}
-            icon={FileText}
-            color="indigo"
-            trend={pipelineStageSummary || "No active papers"}
-          />
-          <StatCard
-            label="Active Courses"
-            value={activeCourses.length}
-            icon={GraduationCap}
-            color="emerald"
-          />
-          <StatCard
-            label="Active Grants"
-            value={fundedGrants.length}
-            icon={DollarSign}
-            color="amber"
-            trend={
-              totalFundedAmount > 0
-                ? `${formatCurrency(totalFundedAmount)} total funded`
-                : "No funded grants"
-            }
-          />
-          <StatCard
-            label="Pending Reviews"
-            value={pendingReviews.length}
-            icon={ClipboardCheck}
-            color="rose"
-          />
-          <StatCard
-            label="Active Students"
-            value={activeStudents.length}
-            icon={Users}
-            color="blue"
-          />
-          <StatCard
-            label="Upcoming Conferences"
-            value={upcomingConferences.length}
-            icon={Plane}
-            color="purple"
-          />
-        </div>
+        {isPaneVisible("stats") && (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <StatCard
+              label="Papers in Pipeline"
+              value={pipelinePapers.length}
+              icon={FileText}
+              color="indigo"
+              trend={pipelineStageSummary || "No active papers"}
+            />
+            <StatCard
+              label="Active Courses"
+              value={activeCourses.length}
+              icon={GraduationCap}
+              color="emerald"
+            />
+            <StatCard
+              label="Active Grants"
+              value={fundedGrants.length}
+              icon={DollarSign}
+              color="amber"
+              trend={
+                totalFundedAmount > 0
+                  ? `${formatCurrency(totalFundedAmount)} total funded`
+                  : "No funded grants"
+              }
+            />
+            <StatCard
+              label="Pending Reviews"
+              value={pendingReviews.length}
+              icon={ClipboardCheck}
+              color="rose"
+            />
+            <StatCard
+              label="Active Students"
+              value={activeStudents.length}
+              icon={Users}
+              color="blue"
+            />
+            <StatCard
+              label="Upcoming Conferences"
+              value={upcomingConferences.length}
+              icon={Plane}
+              color="purple"
+            />
+          </div>
+        )}
 
         {/* Content Cards Row */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Papers Pipeline Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Papers Pipeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pipelinePapers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <FileText className="mb-3 h-10 w-10 text-slate-300" />
-                  <p className="text-sm text-slate-500">
-                    No papers in the pipeline yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {PIPELINE_STAGES.map((stage) => {
-                    const stagePapers = papersByStage[stage];
-                    if (!stagePapers || stagePapers.length === 0) return null;
+          {isPaneVisible("papers-pipeline") && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Papers Pipeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pipelinePapers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <FileText className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      No papers in the pipeline yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {PIPELINE_STAGES.map((stage) => {
+                      const stagePapers = papersByStage[stage];
+                      if (!stagePapers || stagePapers.length === 0) return null;
 
-                    return (
-                      <div key={stage}>
-                        <div className="mb-2 flex items-center gap-2">
-                          <Badge variant={STAGE_BADGE_VARIANT[stage]}>
-                            {STAGE_LABELS[stage]}
-                          </Badge>
-                          <span className="text-xs text-slate-400">
-                            ({stagePapers.length})
-                          </span>
-                        </div>
-                        <ul className="space-y-2">
-                          {stagePapers.map((paper) => (
-                            <li
-                              key={paper.id}
-                              className="flex items-start justify-between rounded-md border border-slate-100 px-3 py-2 transition-colors hover:bg-slate-50"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-slate-800">
-                                  {paper.title}
-                                </p>
-                                {paper.targetJournal && (
-                                  <p className="mt-0.5 truncate text-xs text-slate-500">
-                                    {paper.targetJournal}
+                      return (
+                        <div key={stage}>
+                          <div className="mb-2 flex items-center gap-2">
+                            <Badge variant={STAGE_BADGE_VARIANT[stage]}>
+                              {STAGE_LABELS[stage]}
+                            </Badge>
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                              ({stagePapers.length})
+                            </span>
+                          </div>
+                          <ul className="space-y-2">
+                            {stagePapers.map((paper) => (
+                              <li
+                                key={paper.id}
+                                className="flex items-start justify-between rounded-md border border-slate-100 px-3 py-2 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                                    {paper.title}
                                   </p>
+                                  {paper.targetJournal && (
+                                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                      {paper.targetJournal}
+                                    </p>
+                                  )}
+                                </div>
+                                {paper.coAuthors.length > 0 && (
+                                  <span className="ml-2 shrink-0 text-xs text-slate-400 dark:text-slate-500">
+                                    +{paper.coAuthors.length} co-author
+                                    {paper.coAuthors.length !== 1 ? "s" : ""}
+                                  </span>
                                 )}
-                              </div>
-                              {paper.coAuthors.length > 0 && (
-                                <span className="ml-2 shrink-0 text-xs text-slate-400">
-                                  +{paper.coAuthors.length} co-author
-                                  {paper.coAuthors.length !== 1 ? "s" : ""}
-                                </span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Upcoming Deadlines Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Deadlines</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {upcomingDeadlines.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Calendar className="mb-3 h-10 w-10 text-slate-300" />
-                  <p className="text-sm text-slate-500">
-                    No upcoming deadlines. Enjoy the calm!
-                  </p>
-                </div>
-              ) : (
-                <ul className="space-y-3">
-                  {upcomingDeadlines.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-start gap-3 rounded-md border border-slate-100 px-3 py-2 transition-colors hover:bg-slate-50"
-                    >
-                      {/* Date column */}
-                      <div className="flex shrink-0 flex-col items-center">
-                        <span
-                          className={`text-xs font-semibold ${
-                            item.isOverdue
-                              ? "text-red-600"
-                              : "text-slate-700"
-                          }`}
-                        >
-                          {safeDateFormat(item.dateStr, "MMM d")}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {safeDateFormat(item.dateStr, "yyyy")}
-                        </span>
-                      </div>
-
-                      {/* Content */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium text-slate-800">
-                            {item.label}
-                          </p>
-                          {item.isOverdue && (
-                            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+          {isPaneVisible("deadlines") && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Deadlines</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {upcomingDeadlines.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Calendar className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      No upcoming deadlines. Enjoy the calm!
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="space-y-3">
+                    {upcomingDeadlines.map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex items-start gap-3 rounded-md border border-slate-100 px-3 py-2 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                      >
+                        <div className="flex shrink-0 flex-col items-center">
+                          <span
+                            className={`text-xs font-semibold ${
+                              item.isOverdue
+                                ? "text-red-600 dark:text-red-400"
+                                : "text-slate-700 dark:text-slate-300"
+                            }`}
+                          >
+                            {safeDateFormat(item.dateStr, "MMM d")}
+                          </span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                            {safeDateFormat(item.dateStr, "yyyy")}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                              {item.label}
+                            </p>
+                            {item.isOverdue && (
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500 dark:text-red-400" />
+                            )}
+                          </div>
+                          {item.detail && (
+                            <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                              {item.detail}
+                            </p>
                           )}
                         </div>
-                        {item.detail && (
-                          <p className="mt-0.5 truncate text-xs text-slate-500">
-                            {item.detail}
-                          </p>
-                        )}
-                      </div>
+                        <Badge
+                          variant={moduleBadgeVariant[item.module]}
+                          className="shrink-0"
+                        >
+                          {item.moduleLabel}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-                      {/* Module badge */}
-                      <Badge
-                        variant={moduleBadgeVariant[item.module]}
-                        className="shrink-0"
-                      >
-                        {item.moduleLabel}
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          {/* Teaching pane */}
+          {isPaneVisible("teaching") && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Courses</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {activeCourses.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <GraduationCap className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">No active courses.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {activeCourses.map((c) => (
+                      <li key={c.id} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 dark:border-slate-700">
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{c.code} &mdash; {c.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{c.semester} {c.year} &middot; {c.enrollment} students</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Grants pane */}
+          {isPaneVisible("grants") && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Grant Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {grants.list.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <DollarSign className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">No grants tracked yet.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {grants.list.filter((g) => g.status !== "completed" && g.status !== "declined").map((g) => (
+                      <li key={g.id} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 dark:border-slate-700">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{g.title}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{g.agency} &middot; {g.role}</p>
+                        </div>
+                        <Badge variant={g.status === "funded" ? "success" : "warning"} className="ml-2 shrink-0">
+                          {g.status}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Reviews pane */}
+          {isPaneVisible("reviews") && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Pending Reviews</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingReviews.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <ClipboardCheck className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">No pending reviews.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {pendingReviews.map((r) => (
+                      <li key={r.id} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 dark:border-slate-700">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{r.manuscriptTitle || "Untitled"}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{r.journal}{r.dueDate ? ` · Due ${safeDateFormat(r.dueDate, "MMM d")}` : ""}</p>
+                        </div>
+                        <Badge variant={r.status === "in-progress" ? "info" : "outline"} className="ml-2 shrink-0">{r.status}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Students pane */}
+          {isPaneVisible("students") && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Students</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {activeStudents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Users className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">No active advisees.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {activeStudents.map((s) => (
+                      <li key={s.id} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 dark:border-slate-700">
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{s.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{s.level.toUpperCase()} &middot; {s.program}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Conferences pane */}
+          {isPaneVisible("conferences") && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Conferences</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {upcomingConferences.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Plane className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">No upcoming conferences.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {upcomingConferences.map((c) => (
+                      <li key={c.id} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 dark:border-slate-700">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{c.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{c.location}{c.startDate ? ` · ${safeDateFormat(c.startDate, "MMM d, yyyy")}` : ""}</p>
+                        </div>
+                        <Badge variant="info" className="ml-2 shrink-0">{c.status}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

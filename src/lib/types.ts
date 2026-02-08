@@ -186,6 +186,45 @@ export interface ServiceRole {
   createdAt: string;
 }
 
+// --- Settings ---
+export type Theme = "light" | "dark" | "system";
+export type AccentColor = "indigo" | "blue" | "violet" | "emerald" | "rose" | "amber";
+
+export type DashboardPane =
+  | "stats"
+  | "papers-pipeline"
+  | "deadlines"
+  | "teaching"
+  | "grants"
+  | "reviews"
+  | "students"
+  | "conferences";
+
+export const DASHBOARD_PANES: { value: DashboardPane; label: string; description: string }[] = [
+  { value: "stats", label: "Stat Cards", description: "Summary numbers across all modules" },
+  { value: "papers-pipeline", label: "Papers Pipeline", description: "Manuscripts grouped by stage" },
+  { value: "deadlines", label: "Upcoming Deadlines", description: "Aggregated deadlines from all modules" },
+  { value: "teaching", label: "Active Courses", description: "Currently active teaching" },
+  { value: "grants", label: "Grant Summary", description: "Funded and pending grants" },
+  { value: "reviews", label: "Pending Reviews", description: "Reviews awaiting completion" },
+  { value: "students", label: "Active Students", description: "Current advisees" },
+  { value: "conferences", label: "Upcoming Conferences", description: "Conferences you haven't attended yet" },
+];
+
+export interface UserSettings {
+  theme: Theme;
+  accentColor: AccentColor;
+  visiblePanes: DashboardPane[];
+  screensaverTimeout: number; // minutes, 0 = disabled
+}
+
+export const DEFAULT_SETTINGS: UserSettings = {
+  theme: "light",
+  accentColor: "indigo",
+  visiblePanes: ["stats", "papers-pipeline", "deadlines"],
+  screensaverTimeout: 5,
+};
+
 // --- Linked Folders & Files ---
 export type FolderModule = "papers" | "reviews" | "grants" | "teaching" | "conferences";
 
