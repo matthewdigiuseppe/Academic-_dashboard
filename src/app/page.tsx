@@ -17,9 +17,14 @@ import {
   Plus,
   Check,
   Trash2,
+  DollarSign,
+  ClipboardCheck,
+  BookOpen,
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 import type { Paper, PaperStage, Conference, Student, Todo } from "@/lib/types";
+import { MagicImportModal } from "@/components/dashboard/magic-import-modal";
+import { Sparkles } from "lucide-react";
 
 // ============================================
 // Helpers
@@ -85,41 +90,7 @@ const PAPER_COLUMNS = [
   },
 ];
 
-// Bottom row column definitions
-const BOTTOM_COLUMNS = [
-  {
-    key: "conferences" as const,
-    title: "Upcoming Conferences",
-    description: "Events on your calendar",
-    icon: Plane,
-    headerBg:
-      "bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800",
-    headerText: "text-sky-700 dark:text-sky-300",
-    countBg: "bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300",
-  },
-  {
-    key: "students" as const,
-    title: "Student Feedback",
-    description: "Active advisees needing attention",
-    icon: Users,
-    headerBg:
-      "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
-    headerText: "text-emerald-700 dark:text-emerald-300",
-    countBg:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300",
-  },
-  {
-    key: "todos" as const,
-    title: "Other To-Dos",
-    description: "Miscellaneous tasks",
-    icon: ListTodo,
-    headerBg:
-      "bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800",
-    headerText: "text-violet-700 dark:text-violet-300",
-    countBg:
-      "bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300",
-  },
-];
+
 
 // ============================================
 // Loading Skeleton
@@ -391,8 +362,28 @@ function AddTodoInput({ onAdd }: { onAdd: (text: string) => void }) {
 // ============================================
 
 export default function DashboardPage() {
-  const { isHydrated, papers, conferences, students, todos } = useDashboard();
+  const { isHydrated, papers, conferences, students, todos, grants, peerReviews, courses } = useDashboard();
   const { settings, updateSettings } = useUserSettings();
+
+  const [isMagicImportOpen, setIsMagicImportOpen] = useState(false);
+
+  // Pending reviews
+  const pendingReviews = useMemo(
+    () => peerReviews.list.filter((r) => r.status !== "completed"),
+    [peerReviews.list]
+  );
+
+  // Active grants
+  const activeGrants = useMemo(
+    () => grants.list.filter((g) => g.status === "funded"),
+    [grants.list]
+  );
+
+  // Active courses
+  const activeCourses = useMemo(
+    () => courses.list.filter((c) => c.isActive),
+    [courses.list]
+  );
 
   // --- Scholar Stats Effect ---
   const [isLoadingScholar, setIsLoadingScholar] = useState(false);
@@ -489,133 +480,228 @@ export default function DashboardPage() {
         icon={LayoutDashboard}
         title="Dashboard"
         description="Your academic life at a glance"
+        action={
+          <button
+            onClick={() => setIsMagicImportOpen(true)}
+            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Magic Import</span>
+          </button>
+        }
+      />
+
+      <MagicImportModal
+        isOpen={isMagicImportOpen}
+        onClose={() => setIsMagicImportOpen(false)}
       />
 
       <div className="space-y-6 p-8">
         {/* Summary bar */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
-          <span className="flex items-center gap-1.5">
-            <FileText className="h-4 w-4" />
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
-              {totalActive}
-            </span>{" "}
-            active paper{totalActive !== 1 ? "s" : ""}
-          </span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          {settings.scholarStats && (
-            <>
-              <span className="flex items-center gap-1.5">
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {settings.scholarStats.citationCount}
-                </span>{" "}
-                citations
-              </span>
-              <span className="text-slate-300 dark:text-slate-600">|</span>
-            </>
-          )}
-          {PAPER_COLUMNS.map((col) => (
-            <span key={col.key}>
-              <span className="font-medium text-slate-700 dark:text-slate-300">
-                {paperColumnData[col.key].length}
+        {settings.visiblePanes.includes("stats") && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <FileText className="h-4 w-4" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                {totalActive}
               </span>{" "}
-              {col.title.toLowerCase()}
+              active paper{totalActive !== 1 ? "s" : ""}
             </span>
-          ))}
-        </div>
+            <span className="text-slate-300 dark:text-slate-600">|</span>
+            {settings.scholarStats && (
+              <>
+                <span className="flex items-center gap-1.5">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {settings.scholarStats.citationCount}
+                  </span>{" "}
+                  citations
+                </span>
+                <span className="text-slate-300 dark:text-slate-600">|</span>
+              </>
+            )}
+            {PAPER_COLUMNS.map((col) => (
+              <span key={col.key}>
+                <span className="font-medium text-slate-700 dark:text-slate-300">
+                  {paperColumnData[col.key].length}
+                </span>{" "}
+                {col.title.toLowerCase()}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* ============== TOP ROW: Paper Stages ============== */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {PAPER_COLUMNS.map((col) => {
-            const colPapers = paperColumnData[col.key];
-            return (
-              <ColumnShell
-                key={col.key}
-                title={col.title}
-                description={col.description}
-                icon={col.icon}
-                count={colPapers.length}
-                headerBg={col.headerBg}
-                headerText={col.headerText}
-                countBg={col.countBg}
-                emptyIcon={col.icon}
-                emptyText="No papers here yet"
-              >
-                {colPapers.length > 0 &&
-                  colPapers.map((paper) => (
-                    <PaperCard key={paper.id} paper={paper} />
-                  ))}
-              </ColumnShell>
-            );
-          })}
-        </div>
+        {settings.visiblePanes.includes("papers-pipeline") && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {PAPER_COLUMNS.map((col) => {
+              const colPapers = paperColumnData[col.key];
+              return (
+                <ColumnShell
+                  key={col.key}
+                  title={col.title}
+                  description={col.description}
+                  icon={col.icon}
+                  count={colPapers.length}
+                  headerBg={col.headerBg}
+                  headerText={col.headerText}
+                  countBg={col.countBg}
+                  emptyIcon={col.icon}
+                  emptyText="No papers here yet"
+                >
+                  {colPapers.length > 0 &&
+                    colPapers.map((paper) => (
+                      <PaperCard key={paper.id} paper={paper} />
+                    ))}
+                </ColumnShell>
+              );
+            })}
+          </div>
+        )}
 
-        {/* ============== BOTTOM ROW: Conferences, Students, Todos ============== */}
+        {/* ============== BOTTOM ROW: Conferences, Students, Todos, etc. ============== */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Upcoming Conferences */}
-          <ColumnShell
-            title={BOTTOM_COLUMNS[0].title}
-            description={BOTTOM_COLUMNS[0].description}
-            icon={BOTTOM_COLUMNS[0].icon}
-            count={upcomingConferences.length}
-            headerBg={BOTTOM_COLUMNS[0].headerBg}
-            headerText={BOTTOM_COLUMNS[0].headerText}
-            countBg={BOTTOM_COLUMNS[0].countBg}
-            emptyIcon={Plane}
-            emptyText="No upcoming conferences"
-          >
-            {upcomingConferences.length > 0 &&
-              upcomingConferences.map((conf) => (
-                <ConferenceCard key={conf.id} conf={conf} />
-              ))}
-          </ColumnShell>
+          {settings.visiblePanes.includes("conferences") && (
+            <ColumnShell
+              title="Upcoming Conferences"
+              description="Events on your calendar"
+              icon={Plane}
+              count={upcomingConferences.length}
+              headerBg="bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800"
+              headerText="text-sky-700 dark:text-sky-300"
+              countBg="bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300"
+              emptyIcon={Plane}
+              emptyText="No upcoming conferences"
+            >
+              {upcomingConferences.length > 0 &&
+                upcomingConferences.map((conf) => (
+                  <ConferenceCard key={conf.id} conf={conf} />
+                ))}
+            </ColumnShell>
+          )}
 
           {/* Student Feedback */}
-          <ColumnShell
-            title={BOTTOM_COLUMNS[1].title}
-            description={BOTTOM_COLUMNS[1].description}
-            icon={BOTTOM_COLUMNS[1].icon}
-            count={activeStudents.length}
-            headerBg={BOTTOM_COLUMNS[1].headerBg}
-            headerText={BOTTOM_COLUMNS[1].headerText}
-            countBg={BOTTOM_COLUMNS[1].countBg}
-            emptyIcon={Users}
-            emptyText="No active advisees"
-          >
-            {activeStudents.length > 0 &&
-              activeStudents.map((s) => (
-                <StudentCard key={s.id} student={s} />
-              ))}
-          </ColumnShell>
+          {settings.visiblePanes.includes("students") && (
+            <ColumnShell
+              title="Student Feedback"
+              description="Active advisees needing attention"
+              icon={Users}
+              count={activeStudents.length}
+              headerBg="bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800"
+              headerText="text-emerald-700 dark:text-emerald-300"
+              countBg="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+              emptyIcon={Users}
+              emptyText="No active advisees"
+            >
+              {activeStudents.length > 0 &&
+                activeStudents.map((s) => (
+                  <StudentCard key={s.id} student={s} />
+                ))}
+            </ColumnShell>
+          )}
 
-          {/* Other To-Dos */}
-          <ColumnShell
-            title={BOTTOM_COLUMNS[2].title}
-            description={BOTTOM_COLUMNS[2].description}
-            icon={BOTTOM_COLUMNS[2].icon}
-            count={incompleteTodos.length}
-            headerBg={BOTTOM_COLUMNS[2].headerBg}
-            headerText={BOTTOM_COLUMNS[2].headerText}
-            countBg={BOTTOM_COLUMNS[2].countBg}
-            emptyIcon={ListTodo}
-            emptyText="All clear!"
-          >
-            {/* Always render the todo list + add input */}
-            <>
-              {todos.list.map((todo) => (
-                <TodoItem
-                  key={todo.id}
-                  todo={todo}
-                  onToggle={() =>
-                    todos.update(todo.id, { completed: !todo.completed })
-                  }
-                  onDelete={() => todos.delete(todo.id)}
+          {/* Pending Reviews */}
+          {settings.visiblePanes.includes("reviews") && (
+            <ColumnShell
+              title="Pending Reviews"
+              description="Manuscripts awaiting your report"
+              icon={ClipboardCheck}
+              count={pendingReviews.length}
+              headerBg="bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800"
+              headerText="text-amber-700 dark:text-amber-300"
+              countBg="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+              emptyIcon={ClipboardCheck}
+              emptyText="No pending reviews"
+            >
+              {pendingReviews.length > 0 &&
+                pendingReviews.map((rev) => (
+                  <div key={rev.id} className="rounded-lg border border-slate-150 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-2">{rev.manuscriptTitle}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{rev.journal}</p>
+                    {rev.dueDate && <p className="mt-1 text-xs font-medium text-orange-600">Due: {safeDateFormat(rev.dueDate, "MMM d")}</p>}
+                  </div>
+                ))}
+            </ColumnShell>
+          )}
+
+          {/* Active Grants */}
+          {settings.visiblePanes.includes("grants") && (
+            <ColumnShell
+              title="Grant Summary"
+              description="Active awards & deliverables"
+              icon={DollarSign}
+              count={activeGrants.length}
+              headerBg="bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800"
+              headerText="text-blue-700 dark:text-blue-300"
+              countBg="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+              emptyIcon={DollarSign}
+              emptyText="No active grants"
+            >
+              {activeGrants.length > 0 &&
+                activeGrants.map((g) => (
+                  <div key={g.id} className="rounded-lg border border-slate-150 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{g.title}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{g.agency}</p>
+                    {g.nextDeliverable && <p className="mt-1 text-xs font-medium text-orange-600">Next: {g.nextDeliverable}</p>}
+                  </div>
+                ))}
+            </ColumnShell>
+          )}
+
+          {/* Active Teaching */}
+          {settings.visiblePanes.includes("teaching") && (
+            <ColumnShell
+              title="Active Teaching"
+              description="Currently active courses"
+              icon={BookOpen}
+              count={activeCourses.length}
+              headerBg="bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800"
+              headerText="text-indigo-700 dark:text-indigo-300"
+              countBg="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
+              emptyIcon={BookOpen}
+              emptyText="No active courses"
+            >
+              {activeCourses.length > 0 &&
+                activeCourses.map((c) => (
+                  <div key={c.id} className="rounded-lg border border-slate-150 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{c.code}: {c.name}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{c.semester} {c.year} &middot; {c.enrollment} students</p>
+                  </div>
+                ))}
+            </ColumnShell>
+          )}
+
+          {/* Other To-Dos (Mapped to 'deadlines' pane) */}
+          {settings.visiblePanes.includes("deadlines") && (
+            <ColumnShell
+              title="Other To-Dos"
+              description="Miscellaneous tasks"
+              icon={ListTodo}
+              count={incompleteTodos.length}
+              headerBg="bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800"
+              headerText="text-violet-700 dark:text-violet-300"
+              countBg="bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300"
+              emptyIcon={ListTodo}
+              emptyText="All clear!"
+            >
+              {/* Always render the todo list + add input */}
+              <div className="flex flex-col gap-2">
+                {todos.list.map((todo) => (
+                  <TodoItem
+                    key={todo.id}
+                    todo={todo}
+                    onToggle={() =>
+                      todos.update(todo.id, { completed: !todo.completed })
+                    }
+                    onDelete={() => todos.delete(todo.id)}
+                  />
+                ))}
+                <AddTodoInput
+                  onAdd={(text) => todos.add({ text, completed: false })}
                 />
-              ))}
-              <AddTodoInput
-                onAdd={(text) => todos.add({ text, completed: false })}
-              />
-            </>
-          </ColumnShell>
+              </div>
+            </ColumnShell>
+          )}
         </div>
       </div>
     </div >

@@ -224,6 +224,8 @@ export interface UserSettings {
     hIndex: number;
     lastUpdated: string; // ISO date string
   };
+  aiApiKey?: string;
+  aiProvider?: "gemini" | "openai";
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -231,6 +233,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   accentColor: "indigo",
   visiblePanes: ["stats", "papers-pipeline", "deadlines"],
   screensaverTimeout: 5,
+  aiProvider: "gemini",
 };
 
 // --- Todos ---

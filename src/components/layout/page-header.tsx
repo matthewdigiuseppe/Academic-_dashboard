@@ -7,9 +7,10 @@ interface PageHeaderProps {
   icon?: LucideIcon;
   actionLabel?: string;
   onAction?: () => void;
+  action?: React.ReactNode;
 }
 
-export function PageHeader({ title, description, icon: Icon, actionLabel, onAction }: PageHeaderProps) {
+export function PageHeader({ title, description, icon: Icon, actionLabel, onAction, action }: PageHeaderProps) {
   return (
     <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5 dark:border-slate-700 dark:bg-slate-800">
       <div className="flex items-center gap-3">
@@ -23,12 +24,15 @@ export function PageHeader({ title, description, icon: Icon, actionLabel, onActi
           {description && <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>}
         </div>
       </div>
-      {actionLabel && onAction && (
-        <Button onClick={onAction} size="md">
-          <Plus className="h-4 w-4" />
-          {actionLabel}
-        </Button>
-      )}
+      <div className="flex items-center gap-3">
+        {action}
+        {actionLabel && onAction && (
+          <Button onClick={onAction} size="md">
+            <Plus className="h-4 w-4" />
+            {actionLabel}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

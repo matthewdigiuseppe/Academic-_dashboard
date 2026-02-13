@@ -79,6 +79,45 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* AI Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Magic Import Settings (AI)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+              Configure an AI provider to enable &quot;Magic Import&quot; from emails.
+              Get a free Gemini API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-indigo-500 underline">Google AI Studio</a>.
+            </p>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Provider</label>
+                  <select
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                    value={settings.aiProvider || "gemini"}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    onChange={(e) => updateSettings({ aiProvider: e.target.value as any })}
+                  >
+                    <option value="gemini">Google Gemini (Recommended/Free)</option>
+                    <option value="openai">OpenAI (ChatGPT)</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">API Key</label>
+                <input
+                  type="password"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                  placeholder="Paste your API key here..."
+                  value={settings.aiApiKey || ""}
+                  onChange={(e) => updateSettings({ aiApiKey: e.target.value })}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Theme */}
         <Card>
           <CardHeader>
